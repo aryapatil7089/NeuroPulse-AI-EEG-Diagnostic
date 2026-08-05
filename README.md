@@ -28,9 +28,11 @@ NeuroPulse AI is an end-to-end cloud diagnostic portal designed to automate the 
 * **Cloud Architecture:** Deployed a Python Flask backend on an **AWS EC2 (t3.micro)** server featuring Scalable Batch Processing to handle multi-hour file uploads without memory overflow.
 
 ## 📊 Key Findings
+In medical diagnostics, maximizing **Recall (Sensitivity)** is the highest priority to prevent catastrophic False Negatives (missing a seizure).
+* **The Winning Model:** The **Base Random Forest** algorithm trained on **SMOTE-balanced data** achieved the highest clinical performance, delivering a **Recall of ~98%**.
+* **Rejecting Hyperparameter Trade-offs:** While hyperparameter tuning generally improves overall accuracy, we found it forced a Precision-Recall trade-off. For example, tuning the SVM model decreased its Recall to boost Precision—the exact opposite of our clinical needs. We actively chose the Base Random Forest with SMOTE as it maximized our ability to catch seizures, missing only 13 instances across thousands of test samples. 
+* **Why Not SVM?** Furthermore, Support Vector Classifiers were rejected due to their high time and space complexity, making them unsuitable for our lightweight cloud deployment.
 * **Baseline Failure:** Naive models (like Logistic Regression) achieved high accuracy but failed clinically, missing >90% of seizures due to the severe class imbalance.
-* **The Winning Model:** Post-SMOTE, the hyperparameter-tuned **Random Forest** ensemble outperformed LightGBM and SVMs by prioritizing recall. 
-* **Clinical Safety:** The final model achieved **>97% Recall**, minimizing False Negatives (missing only 13 seizure instances across thousands of unseen test samples).
 
 ## 💻 Clinical Diagnostic UI (Frontend)
 The web application provides instant triage via:
