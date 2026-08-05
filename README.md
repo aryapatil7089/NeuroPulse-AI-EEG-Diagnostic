@@ -25,7 +25,7 @@ NeuroPulse AI is an end-to-end cloud diagnostic portal designed to automate the 
 * **Clinical Dataset:** Utilized the gold-standard 178 Hz continuous EEG dataset from the Department of Epileptology at the University of Bonn.
 * **Strategic Binarization:** Engineered the original 5-class target into a binary clinical focus (Seizure vs. Non-Seizure).
 * **Handling Imbalance:** Applied **SMOTE** (Synthetic Minority Over-sampling Technique) to correct the resulting 80:20 class imbalance, establishing a 50:50 ratio to prevent majority-class bias.
-* **Cloud Architecture:** Deployed a Python Flask backend on an **AWS EC2 (t3.micro)** server featuring Scalable Batch Processing to handle multi-hour file uploads without memory overflow.
+* **Cloud Architecture:** Deployed a Python Flask backend on a scalable cloud server architecture featuring Batch Processing to handle multi-hour file uploads without memory overflow.
 
 ## 📊 Key Findings
 In medical diagnostics, maximizing **Recall (Sensitivity)** is the highest priority to prevent catastrophic False Negatives (missing a seizure).
@@ -52,7 +52,6 @@ The web application provides instant triage via:
 * Scale the AWS infrastructure using a Gunicorn/Nginx cluster for multi-hospital enterprise deployment.
 
 ## ⚙️ How to Run the Project Locally
-Due to GitHub's 25MB web upload limit, the trained Random Forest model (45MB) is hosted securely on Google Drive.
 
 1. Clone this repository to your local machine.
 2. **[👉 Click Here to Download rf_model.pkl](https://drive.google.com/file/d/1OS2zA2MdjZ91zXNqxrDqQamPu6ZfYFAc/view?usp=sharing)**
