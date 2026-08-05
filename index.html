@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroPulse AI — Continuous EEG Diagnostic Portal</title>
+    <style>
+        :root {
+            --bg-dark: #0b0f19;
+            --card-bg: #111827;
+            --border-color: #1f2937;
+            --accent-primary: #8b5cf6; /* Premium Sophisticated Violet */
+            --accent-secondary: #6366f1; /* Deep Clinical Indigo */
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --alert-red-bg: rgba(239, 68, 68, 0.15);
+            --alert-red-border: #ef4444;
+            --safe-green-bg: rgba(16, 185, 129, 0.15);
+            --safe-green-border: #10b981;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background-color: var(--bg-dark); 
+            color: var(--text-main);
+            max-width: 900px; 
+            margin: 40px auto; 
+            padding: 20px; 
+            line-height: 1.5;
+        }
+
+        .header-container { text-align: center; margin-bottom: 35px; border-bottom: 1px solid var(--border-color); padding-bottom: 25px; }
+        h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin: 0 0 8px 0; background: linear-gradient(90deg, #fff, var(--accent-primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { color: var(--text-muted); font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px; margin: 0; }
+        .card { background: var(--card-bg); padding: 40px; border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }
+        .upload-box { border: 2px dashed #374151; padding: 35px; border-radius: 12px; text-align: center; background: rgba(31, 41, 55, 0.4); margin-bottom: 25px; transition: all 0.3s ease; }
+        .upload-box:hover { border-color: var(--accent-primary); background: rgba(139, 92, 246, 0.05); }
+        .or-divider { text-align: center; margin: 25px 0; color: #4b5563; font-size: 12px; font-weight: bold; letter-spacing: 2px; }
+        label { font-weight: 600; color: #d1d5db; display: block; margin-bottom: 8px; font-size: 14px; }
+        textarea { width: 100%; height: 80px; padding: 14px; background: #0d131f; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 13px; box-sizing: border-box; resize: vertical; }
+        textarea:focus, select:focus, input[type="number"]:focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2); }
+        select, input[type="number"] { width: 100%; padding: 12px 14px; background: #0d131f; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+        
+        .btn-submit { background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary)); color: white; border: none; padding: 16px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 25px; transition: opacity 0.2s, transform 0.1s; box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3); }
+        .btn-submit:hover { opacity: 0.95; }
+        .btn-submit:active { transform: scale(0.99); }
+
+        .result-box { margin-top: 35px; padding: 24px; font-size: 18px; font-weight: bold; text-align: center; border-radius: 12px; letter-spacing: 0.5px; }
+        .success { background: var(--safe-green-bg); color: #34d399; border: 1px solid var(--safe-green-border); }
+        .danger { background: var(--alert-red-bg); color: #f87171; border: 1px solid var(--alert-red-border); animation: pulse-border 2s infinite; }
+        
+        @keyframes pulse-border { 
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } 
+        }
+
+        .graph-container { margin-top: 35px; text-align: center; border-top: 1px solid var(--border-color); padding-top: 30px; }
+        .graph-container img { max-width: 100%; border-radius: 8px; border: 1px solid var(--border-color); background: #0d131f; transition: opacity 0.2s ease-in-out; }
+        
+        .scrub-box { background: rgba(139, 92, 246, 0.05); border: 1px solid var(--accent-primary); padding: 25px; border-radius: 12px; margin-top: 30px; text-align: center; }
+        
+        /* Stylish Range Slider */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; margin: 20px 0; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%; background: var(--accent-primary); cursor: pointer; margin-top: -8px; box-shadow: 0 0 15px rgba(139, 92, 246, 0.8); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; cursor: pointer; background: #1f2937; border-radius: 4px; border: 1px solid #374151; }
+        input[type=range]:focus { outline: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <h1>🧠 NeuroPulse AI Diagnostic Portal</h1>
+        <p class="subtitle">Continuous EEG Mapping & AI Analytics Engine</p>
+    </div>
+
+    <!-- MAIN UPLOAD CARD -->
+    <div class="card">
+        <form action="/predict" method="post" enctype="multipart/form-data">
+            
+            <div class="upload-box">
+                <label style="font-size: 16px; color: #fff; margin-bottom: 12px;">Upload Patient Continuous EEG Recording</label>
+                <input type="file" name="file" accept=".csv, .txt, .dat" style="color: var(--text-muted);">
+                <small style="display:block; color: var(--text-muted); margin-top: 10px;">
+                    Supports .csv, .txt, or .dat streams
+                </small>
+            </div>
+
+            <div class="or-divider">OR MANUAL ARRAY ENTRY</div>
+
+            <div style="margin-bottom: 20px;">
+                <label>📊 Paste 1-Second Raw Waveform Data:</label>
+                <textarea name="eeg_values" placeholder="e.g., -12, 23, 45, -67, 89, -34..."></textarea>
+            </div>
+            
+            <div style="margin-bottom: 10px;">
+                <label>Select Hardware Sampling Rate (Hz):</label>
+                <select name="sampling_rate_preset" id="hz_select" onchange="toggleCustomHz()">
+                    <option value="178">178 Hz</option>
+                    <option value="173.61">173.61 Hz</option>
+                    <option value="256">256 Hz</option>
+                    <option value="500">500 Hz</option>
+                    <option value="1000">1000 Hz</option>
+                    <option value="custom">⚙️ Custom Frequency</option>
+                </select>
+                
+                <input type="number" step="0.01" name="custom_hz" id="custom_hz_input" placeholder="Enter custom Hz (e.g., 173.26)" style="display: none; margin-top: 12px; border-color: var(--accent-primary);">
+            </div>
+
+            <button type="submit" class="btn-submit">⚡ Analyze Brainwave Data</button>
+        </form>
+
+        {% if prediction_text %}
+            <div class="result-box {{ status }}">
+                {{ prediction_text }}
+            </div>
+        {% endif %}
+
+        {% if timeline_url %}
+            <div class="graph-container">
+                <label style="margin-bottom: 12px; color: var(--text-muted); font-size: 13px; letter-spacing: 1px; text-transform: uppercase; display: block;">Temporal Diagnostic Map (Timeline)</label>
+                <img src="data:image/png;base64,{{ timeline_url }}" alt="EEG Timeline Map">
+            </div>
+        {% endif %}
+
+        {% if waveform_url %}
+            <!-- Notice we added IDs to the label and image here so JS can update them! -->
+            <div class="graph-container" style="border-top: none; margin-top: 20px; padding-top: 0;">
+                <label id="waveform_label" style="margin-bottom: 12px; color: var(--accent-primary); font-size: 13px; letter-spacing: 1px; text-transform: uppercase; display: block;">Clinical Visual Verification — Raw Waveform (Showing Second {{ current_sec }} of {{ total_secs }})</label>
+                <img id="waveform_img" src="data:image/png;base64,{{ waveform_url }}" alt="EEG Raw Waveform">
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- 🚀 UPGRADED: AJAX SLIDER (ONLY APPEARS AFTER A DIAGNOSIS!) -->
+    {% if total_secs and total_secs > 1 %}
+    <div class="card scrub-box">
+        <h3 style="margin: 0 0 10px 0; color: var(--accent-primary); font-size: 18px;">🔬 Detailed Waveform Viewer</h3>
+        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 10px;">
+            Slide the dial or enter a specific second to instantly view the raw brainwaves without re-uploading.
+        </p>
+        
+        <!-- THE SLIDER -->
+        <div style="display: flex; align-items: center; justify-content: center; gap: 15px; max-width: 500px; margin: 0 auto;">
+            <span style="font-weight: bold; color: #9ca3af;">Sec 1</span>
+            
+            <input type="range" id="secondSlider" min="1" max="{{ total_secs }}" value="{{ current_sec }}" 
+                   oninput="updateText(this.value)" onchange="fetchNewGraph(this.value)">
+            
+            <span style="font-weight: bold; color: #9ca3af;">Sec {{ total_secs }}</span>
+        </div>
+        
+        <!-- EXACT SECOND ENTRY -->
+        <div style="margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <label for="exactSecondInput" style="color: var(--text-muted); font-size: 15px; margin: 0;">Or jump to exact second:</label>
+            <input type="number" id="exactSecondInput" min="1" max="{{ total_secs }}" value="{{ current_sec }}" 
+                   style="width: 80px; padding: 8px; border: 2px solid var(--accent-primary); background: #080c14; color: white; border-radius: 6px; text-align: center; font-size: 15px; font-weight: bold;" 
+                   onchange="syncSliderAndFetch(this.value)">
+        </div>
+        
+        <h2 id="slider_text" style="color: white; margin-top: 20px;">Currently Viewing: Second {{ current_sec }}</h2>
+        
+    </div>
+    {% endif %}
+
+    <script>
+        function toggleCustomHz() {
+            var selectBox = document.getElementById("hz_select");
+            var customBox = document.getElementById("custom_hz_input");
+            if (selectBox.value === "custom") {
+                customBox.style.display = "block";
+                customBox.required = true;
+            } else {
+                customBox.style.display = "none";
+                customBox.required = false;
+            }
+        }
+
+        // 1. Updates text and input box instantly while dragging the slider
+        function updateText(val) {
+            document.getElementById('slider_text').innerText = "Currently Viewing: Second " + val;
+            document.getElementById('waveform_label').innerText = "Clinical Visual Verification — Raw Waveform (Showing Second " + val + " of {{ total_secs }})";
+            // Sync the numeric input box while dragging
+            let inputField = document.getElementById('exactSecondInput');
+            if (inputField) inputField.value = val;
+        }
+
+        // 2. Used when the doctor TYPES a number into the box and hits enter
+        function syncSliderAndFetch(val) {
+            let parsedVal = parseInt(val);
+            let maxSecs = parseInt("{{ total_secs }}") || 1;
+            
+            // Validate the number (prevent crashing if they type -5 or 100 on a 23s video)
+            if (isNaN(parsedVal) || parsedVal < 1) parsedVal = 1;
+            if (parsedVal > maxSecs) parsedVal = maxSecs;
+            
+            // Update the box text to the safe number
+            document.getElementById('exactSecondInput').value = parsedVal;
+            // Update the slider position
+            document.getElementById('secondSlider').value = parsedVal;
+            
+            updateText(parsedVal);
+            fetchNewGraph(parsedVal);
+        }
+
+        // 3. Whispers to the Python server to grab the image!
+        function fetchNewGraph(val) {
+            document.getElementById('waveform_img').style.opacity = '0.5';
+
+            let formData = new FormData();
+            formData.append('target_second', val);
+
+            fetch('/scrub', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    document.getElementById('waveform_img').src = "data:image/png;base64," + data.new_image;
+                } else {
+                    alert("Error loading graph: " + data.error);
+                }
+                document.getElementById('waveform_img').style.opacity = '1';
+            })
+            .catch(error => {
+                console.error("Fetch error:", error);
+                document.getElementById('waveform_img').style.opacity = '1';
+            });
+        }
+    </script>
+</body>
+</html>
