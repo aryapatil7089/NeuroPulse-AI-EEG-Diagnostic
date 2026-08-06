@@ -13,7 +13,7 @@
 
 ### 📺 Live System Demonstration
 **[👉 CLICK HERE TO WATCH THE CLOUD DEPLOYMENT & UI DEMO](https://drive.google.com/drive/folders/1sTB1kVE0n4wdj-C2vFWHUFTHin9S3gyr?usp=sharing)**
-* **Video Verification Data:** The live demonstration utilizes real-world unseen patient telemetry sourced directly from the **[University of Bonn Epileptology Database](https://www.upf.edu/web/ntsa/downloads/-/asset_publisher/xvT6E4pczrBw/content/2001-indications-of-nonlinear-deterministic-and-finite-dimensional-structures-in-time-series-of-brain-electrical-activity-dependence-on-recording-regi)** to validate the model's clinical efficacy.
+* **Video Verification Data:** The live demonstration utilizes real-world unseen patient telemetry sourced directly from the **[University of Bonn Epileptology Database](https://www.upf.edu/web/ntsa/downloads/-/asset_publisher/xvT6E4pczrBw/content/2001-indications-of-nonlinear-deterministic-and-finite-dimensional-structures-in-time-series-of-brain-electrical-activity-dependence-on-recording-regi)** to validate the model's clinical efficancy.
 
 ---
 
