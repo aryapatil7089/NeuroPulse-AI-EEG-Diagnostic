@@ -41,11 +41,13 @@ The web application provides instant triage via:
 3. **AJAX Waveform Scrubber:** Utilizes headless background rendering (`Matplotlib Agg`) to allow neurologists to seamlessly scroll through the timeline and visually verify raw EEG waveforms in real-time without page reloads.
 
 ## 📁 Repository Structure
-* `app.py`: The Flask cloud server backend.
-* `NeuroPulse_Model.ipynb`: Complete EDA, preprocessing, and model training notebook.
-* `rf_model.pkl` & `scaler.pkl`: The serialized Random Forest model and standard scaler.
-* `templates/`: HTML interface files.
-* `requirements.txt`: Required dependencies for cloud deployment.
+* [`app.py`](./app.py): The Flask cloud server backend.
+* [`NeuroPulse_Model.ipynb`](./NeuroPulse_Model.ipynb): Complete EDA, preprocessing, and model training notebook.
+* [`seizure_scaler.pkl`](./seizure_scaler.pkl): The serialized standard scaler object (`rf_model.pkl` is hosted via Google Drive link).
+* [`templates/`](./templates): Folder containing HTML interface files (`index.html`).
+* [`requirements.txt`](./requirements.txt): Required dependencies for cloud deployment.
+* [`esr.csv`](./esr.csv): The primary dataset file used for model training and evaluation.
+* [`NeuroPulse_AI_Presentation.pptx`](./NeuroPulse_AI_Presentation.pptx): Project presentation slides.
 
 ## 🔮 Future Scope
 * Upgrade the ingestion pipeline to support live WebSocket streaming directly from hospital IoT EEG caps.
