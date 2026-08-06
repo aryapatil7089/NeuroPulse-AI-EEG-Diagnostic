@@ -43,7 +43,8 @@ The web application provides instant triage via:
 ## 📁 Repository Structure
 * [`app.py`](./app.py): The Flask cloud server backend.
 * [`NeuroPulse_Model.ipynb`](./NeuroPulse_Model.ipynb): Complete EDA, preprocessing, and model training notebook.
-* [`seizure_scaler.pkl`](./seizure_scaler.pkl): The serialized standard scaler object (`rf_model.pkl` is hosted via Google Drive link).
+* [`seizure_scaler.pkl`](./seizure_scaler.pkl): The serialized standard scaler object.
+* [`seizure_rf_model.pkl`](./seizure_rf_model.pkl): containing a pre-trained model serialized using Python's pickle module for quick deployment and inference.
 * [`templates/`](./templates): Folder containing HTML interface files (`index.html`).
 * [`requirements.txt`](./requirements.txt): Required dependencies for cloud deployment.
 * [`esr.csv`](./esr.csv): The primary dataset file used for model training and evaluation.
@@ -56,7 +57,6 @@ The web application provides instant triage via:
 ## ⚙️ How to Run the Project Locally
 
 1. Clone this repository to your local machine.
-2. **[👉 Click Here to Download rf_model.pkl](https://drive.google.com/file/d/1OS2zA2MdjZ91zXNqxrDqQamPu6ZfYFAc/view?usp=sharing)**
-3. Place the downloaded `rf_model.pkl` in the root directory (in the same folder as `app.py`).
-4. Install dependencies: `pip install -r requirements.txt`
-5. Run the server: `python app.py`
+2. Place the downloaded `rf_model.pkl` in the root directory (in the same folder as `app.py`).
+3. Install dependencies: `pip install -r requirements.txt`
+4. Run the server: `python app.py`
