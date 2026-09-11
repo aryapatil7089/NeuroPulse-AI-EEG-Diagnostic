@@ -64,14 +64,16 @@ def generate_timeline_plot(predictions):
     ax = plt.axes()
     ax.set_facecolor('#0b0f19')
     
-    colors = ['#ef4444' if p == 1 else '#10b981' for p in predictions]
+    x = np.arange(1, len(predictions) + 1)
+    pred_array = np.array(predictions)
     
-    # Added edge colors so blocks are easily countable
-    plt.bar(range(1, len(predictions) + 1), [1]*len(predictions), color=colors, width=1.0, edgecolor='#0b0f19', linewidth=1.0)
+    # 🚀 OPTIMIZATION 1: Use fill_between instead of drawing 3600 bars. Prevents server crash!
+    plt.fill_between(x, 0, 1, where=(pred_array == 1), color='#ef4444', step='mid')
+    plt.fill_between(x, 0, 1, where=(pred_array != 1), color='#10b981', step='mid')
     
-    # Force the X-axis to show every individual second (1, 2, 3...) instead of skipping to 5
-    step = 1 if len(predictions) <= 30 else 2
-    plt.xticks(range(1, len(predictions) + 1, step))
+    # 🚀 OPTIMIZATION 2: Limit ticks to a maximum of 30 to prevent Matplotlib Memory Error
+    step = max(1, len(predictions) // 30)
+    plt.xticks(np.arange(1, len(predictions) + 1, step))
     
     plt.yticks([])
     plt.xlabel('Time (Seconds)', color='#9ca3af')
@@ -81,6 +83,9 @@ def generate_timeline_plot(predictions):
     ax.spines['top'].set_color('none') 
     ax.spines['right'].set_color('none')
     ax.spines['left'].set_color('none')
+    
+    plt.xlim(1, len(predictions))
+    plt.ylim(0, 1)
     plt.tight_layout()
     
     img = io.BytesIO()
@@ -108,9 +113,9 @@ def predict():
             
             # --- NEW CLINICAL EDF PROCESSING LOGIC ---
             if filename.endswith('.edf'):
-                with tempfile.NamedTemporaryFile(suffix='.edf', delete=False) as tmp:
-                    file.save(tmp.name)
-                    tmp_path = tmp.name
+                # Safely save temp file to prevent OS Lock Crash
+                tmp_path = os.path.join(tempfile.gettempdir(), file.filename)
+                file.save(tmp_path)
                 
                 try:
                     # Read metadata only to save RAM
@@ -135,7 +140,8 @@ def predict():
                 
                 if raw_values.shape[1] == 1 or len(raw_values.shape) == 1:
                     flat_stream = raw_values.flatten()
-                    # 60s Cap only applies to raw arrays now
+                    
+                    # 60s Cap only applies to CSV/TXT now
                     max_points = int(user_hz * 60)
                     if len(flat_stream) > max_points:
                         flat_stream = flat_stream[:max_points]
@@ -167,7 +173,6 @@ def predict():
         processed_rows = np.array(processed_rows)
         scaled_features = scaler.transform(processed_rows)
         all_predictions = model.predict(scaled_features)
-        
         LATEST_PREDICTIONS = all_predictions
         
         # --- NEW TIMESTAMPS LOGIC ---
@@ -204,9 +209,17 @@ def predict():
                                num_seizures=num_seizures,
                                seizure_start=seizure_start,
                                seizure_end=seizure_end)
-        
+                               
     except Exception as e:
-        return render_template('index.html', prediction_text=f"Error processing data: {str(e)}", status="danger")
+        # Failsafe to prevent 500 error page if anything fails
+        return render_template('index.html', 
+                               prediction_text=f"Error processing data: {str(e)}", 
+                               status="danger",
+                               num_seizures='N/A',
+                               seizure_start='N/A',
+                               seizure_end='N/A',
+                               total_secs=0,
+                               current_sec=0)
 
 @app.route('/scrub', methods=['POST'])
 def scrub():
