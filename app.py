@@ -108,45 +108,34 @@ def predict():
             
             # --- NEW CLINICAL EDF PROCESSING LOGIC ---
             if filename.endswith('.edf'):
-                # 1. Save uploaded file to a temporary disk location for MNE to read
                 with tempfile.NamedTemporaryFile(suffix='.edf', delete=False) as tmp:
                     file.save(tmp.name)
                     tmp_path = tmp.name
                 
                 try:
-                    # 2. Read the EDF file natively
-                    raw = mne.io.read_raw_edf(tmp_path, preload=True, verbose=False)
-                    
-                    # 3. Auto-detect hospital hardware sampling rate
+                    # Read metadata only to save RAM
+                    raw = mne.io.read_raw_edf(tmp_path, preload=False, verbose=False)
                     user_hz = raw.info['sfreq']  
                     LATEST_HZ = user_hz
                     
-                    # 4. Extract raw data and convert Volts to Microvolts (µV)
-                    data = raw.get_data()
+                    # Extract ONLY the first channel, but read the ENTIRE file for timestamps
+                    data = raw.get_data(picks=[0])
                     flat_stream = data[0] * 1e6  
                 finally:
-                    # 5. Destroy the temp file so the server doesn't crash from full storage
                     if os.path.exists(tmp_path):
                         os.remove(tmp_path)
                         
-                # RAPID TRIAGE FEATURE: Cap the analysis at exactly 60 seconds
-                max_points = int(user_hz * 60)
-                if len(flat_stream) > max_points:
-                    flat_stream = flat_stream[:max_points]
-                    
                 total_seconds = max(1, round(len(flat_stream) / user_hz))
                 raw_rows_list = np.array_split(flat_stream, total_seconds)
 
             # --- ORIGINAL CSV/TXT/DAT LOGIC ---
             else:
-                # SMART MEMORY CAP: Only read the first 20,000 rows to prevent RAM crash on 1GB servers
                 df = pd.read_csv(file, header=None, sep=r'\s+|,', engine='python', nrows=20000)
                 raw_values = df.values.astype(float)
                 
                 if raw_values.shape[1] == 1 or len(raw_values.shape) == 1:
                     flat_stream = raw_values.flatten()
-                    
-                    # RAPID TRIAGE FEATURE: Cap the analysis at exactly 60 seconds
+                    # 60s Cap only applies to raw arrays now
                     max_points = int(user_hz * 60)
                     if len(flat_stream) > max_points:
                         flat_stream = flat_stream[:max_points]
@@ -154,14 +143,11 @@ def predict():
                     total_seconds = max(1, round(len(flat_stream) / user_hz))
                     raw_rows_list = np.array_split(flat_stream, total_seconds)
                 else:
-                    # RAPID TRIAGE FEATURE: Cap at 60 rows (60 seconds) if data is matrix
                     if len(raw_values) > 60:
                         raw_values = raw_values[:60]
                     raw_rows_list = raw_values
         else:
             input_data = request.form.get('eeg_values', '').strip()
-            
-            # PREVENT BLANK SUBMISSION CRASH
             if not input_data:
                 return render_template('index.html', prediction_text="⚠️ Please provide data! Upload an EEG file or paste a raw waveform array to begin.", status="danger")
                 
@@ -171,7 +157,6 @@ def predict():
         LATEST_ROWS_LIST = raw_rows_list
         processed_rows = []
         
-        # Format the data exactly how the ML model expects it (178 features)
         for row in raw_rows_list:
             if len(row) < 178:
                 row = np.pad(row, (0, 178 - len(row)), 'constant')
@@ -183,31 +168,46 @@ def predict():
         scaled_features = scaler.transform(processed_rows)
         all_predictions = model.predict(scaled_features)
         
-        # Save predictions globally so the scrubber knows what color to make the graph
         LATEST_PREDICTIONS = all_predictions
         
-        seizure_detected = 1 in all_predictions
-        total_seizure_seconds = sum(all_predictions)
+        # --- NEW TIMESTAMPS LOGIC ---
+        seizure_seconds_indices = np.where(all_predictions == 1)[0]
         
-        # Render the First Second Graph by default
-        target_idx = 0
-        is_seizure_sec = all_predictions[target_idx] == 1
-        waveform_url = generate_waveform_plot(raw_rows_list[target_idx], user_hz, target_idx + 1, is_seizure_sec)
-        timeline_url = generate_timeline_plot(all_predictions) if len(all_predictions) > 1 else None
-        
-        if seizure_detected:
-            result = f"⚠️ CRITICAL ALERT: Epileptic Seizure Activity Detected! (Flagged in {total_seizure_seconds} out of {len(all_predictions)} seconds analyzed via Rapid Triage)"
+        if len(seizure_seconds_indices) > 0:
+            num_seizures = 1
+            seizure_start = int(seizure_seconds_indices[0])
+            seizure_end = int(seizure_seconds_indices[-1])
+            
+            result = f"⚠️ CRITICAL ALERT: Epileptic Seizure Activity Detected!"
             status_class = "danger"
         else:
-            result = f"✅ Patient Stable: Normal Brain Baseline Rhythm verified across the first {len(all_predictions)} seconds via Rapid Triage."
+            num_seizures = 0
+            seizure_start = "N/A"
+            seizure_end = "N/A"
+            
+            result = f"✅ Patient Stable: Normal Brain Baseline Rhythm verified."
             status_class = "success"
             
-        return render_template('index.html', prediction_text=result, waveform_url=waveform_url, timeline_url=timeline_url, status=status_class, total_secs=len(all_predictions), current_sec=target_idx+1)
+        target_idx = seizure_start if num_seizures > 0 else 0
+        is_seizure_sec = all_predictions[target_idx] == 1
+        
+        waveform_url = generate_waveform_plot(raw_rows_list[target_idx], user_hz, target_idx + 1, is_seizure_sec)
+        timeline_url = generate_timeline_plot(all_predictions) if len(all_predictions) > 1 else None
+            
+        return render_template('index.html', 
+                               prediction_text=result, 
+                               waveform_url=waveform_url, 
+                               timeline_url=timeline_url, 
+                               status=status_class, 
+                               total_secs=len(all_predictions), 
+                               current_sec=target_idx+1,
+                               num_seizures=num_seizures,
+                               seizure_start=seizure_start,
+                               seizure_end=seizure_end)
         
     except Exception as e:
         return render_template('index.html', prediction_text=f"Error processing data: {str(e)}", status="danger")
 
-# AJAX Route: Triggers when user drags the slider
 @app.route('/scrub', methods=['POST'])
 def scrub():
     global LATEST_ROWS_LIST, LATEST_HZ, LATEST_PREDICTIONS
