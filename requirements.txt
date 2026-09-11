@@ -6,3 +6,4 @@ joblib
 matplotlib
 gunicorn
 imblearn
+mne

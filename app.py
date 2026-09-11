@@ -7,6 +7,9 @@ matplotlib.use('Agg') # Required for server background plotting
 import matplotlib.pyplot as plt
 import io
 import base64
+import os
+import tempfile
+import mne # Added for clinical EDF support
 
 app = Flask(__name__)
 
@@ -101,14 +104,31 @@ def predict():
 
         if 'file' in request.files and request.files['file'].filename != '':
             file = request.files['file']
+            filename = file.filename.lower()
             
-            # SMART MEMORY CAP: Only read the first 20,000 rows to prevent RAM crash on 1GB servers
-            df = pd.read_csv(file, header=None, sep=r'\s+|,', engine='python', nrows=20000)
-            raw_values = df.values.astype(float)
-            
-            if raw_values.shape[1] == 1 or len(raw_values.shape) == 1:
-                flat_stream = raw_values.flatten()
+            # --- NEW CLINICAL EDF PROCESSING LOGIC ---
+            if filename.endswith('.edf'):
+                # 1. Save uploaded file to a temporary disk location for MNE to read
+                with tempfile.NamedTemporaryFile(suffix='.edf', delete=False) as tmp:
+                    file.save(tmp.name)
+                    tmp_path = tmp.name
                 
+                try:
+                    # 2. Read the EDF file natively
+                    raw = mne.io.read_raw_edf(tmp_path, preload=True, verbose=False)
+                    
+                    # 3. Auto-detect hospital hardware sampling rate
+                    user_hz = raw.info['sfreq']  
+                    LATEST_HZ = user_hz
+                    
+                    # 4. Extract raw data and convert Volts to Microvolts (µV)
+                    data = raw.get_data()
+                    flat_stream = data[0] * 1e6  
+                finally:
+                    # 5. Destroy the temp file so the server doesn't crash from full storage
+                    if os.path.exists(tmp_path):
+                        os.remove(tmp_path)
+                        
                 # RAPID TRIAGE FEATURE: Cap the analysis at exactly 60 seconds
                 max_points = int(user_hz * 60)
                 if len(flat_stream) > max_points:
@@ -116,11 +136,28 @@ def predict():
                     
                 total_seconds = max(1, round(len(flat_stream) / user_hz))
                 raw_rows_list = np.array_split(flat_stream, total_seconds)
+
+            # --- ORIGINAL CSV/TXT/DAT LOGIC ---
             else:
-                # RAPID TRIAGE FEATURE: Cap at 60 rows (60 seconds) if data is matrix
-                if len(raw_values) > 60:
-                    raw_values = raw_values[:60]
-                raw_rows_list = raw_values
+                # SMART MEMORY CAP: Only read the first 20,000 rows to prevent RAM crash on 1GB servers
+                df = pd.read_csv(file, header=None, sep=r'\s+|,', engine='python', nrows=20000)
+                raw_values = df.values.astype(float)
+                
+                if raw_values.shape[1] == 1 or len(raw_values.shape) == 1:
+                    flat_stream = raw_values.flatten()
+                    
+                    # RAPID TRIAGE FEATURE: Cap the analysis at exactly 60 seconds
+                    max_points = int(user_hz * 60)
+                    if len(flat_stream) > max_points:
+                        flat_stream = flat_stream[:max_points]
+                        
+                    total_seconds = max(1, round(len(flat_stream) / user_hz))
+                    raw_rows_list = np.array_split(flat_stream, total_seconds)
+                else:
+                    # RAPID TRIAGE FEATURE: Cap at 60 rows (60 seconds) if data is matrix
+                    if len(raw_values) > 60:
+                        raw_values = raw_values[:60]
+                    raw_rows_list = raw_values
         else:
             input_data = request.form.get('eeg_values', '').strip()
             
