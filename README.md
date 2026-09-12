@@ -2,7 +2,7 @@
 
 **Author:** Arya Patil  
 **Institution:** Imarticus Learning (Postgraduate Program in Data Science & Analytics)  
-**Track:** Data Science Project Competition (July '26)
+**Track:** Data Science Project Competition (National Evaluation Round - July '26)
 
 ---
 
@@ -25,38 +25,42 @@ NeuroPulse AI is an end-to-end cloud diagnostic portal designed to automate the 
 * **Clinical Dataset:** Utilized the gold-standard 178 Hz continuous EEG dataset from the Department of Epileptology at the University of Bonn.
 * **Strategic Binarization:** Engineered the original 5-class target into a binary clinical focus (Seizure vs. Non-Seizure).
 * **Handling Imbalance:** Applied **SMOTE** (Synthetic Minority Over-sampling Technique) to correct the resulting 80:20 class imbalance, establishing a 50:50 ratio to prevent majority-class bias.
-* **Cloud Architecture:** Deployed a Python Flask backend on a scalable cloud server architecture featuring Batch Processing to handle multi-hour file uploads without memory overflow.
+* **⚡ NEW - Clinical EDF Integration:** The backend now natively ingests hospital-standard European Data Format (`.edf`) files using the `mne` framework. It automatically detects hardware sampling rates and converts voltage units on the fly for true cross-hospital interoperability (e.g., tested on unseen 256 Hz CHB-MIT pediatric data).
+* **Cloud Architecture:** Deployed a Python Flask backend on a scalable cloud server architecture featuring memory-safe Batch Processing to handle 1-hour continuous files without server overflow.
 
 ## 📊 Key Findings
 In medical diagnostics, maximizing **Recall (Sensitivity)** is the highest priority to prevent catastrophic False Negatives (missing a seizure).
 * **The Winning Model:** The **Base Random Forest** algorithm trained on **SMOTE-balanced data** achieved the highest clinical performance, delivering a **Recall of ~98%**.
-* **Rejecting Hyperparameter Trade-offs:** While hyperparameter tuning generally improves overall accuracy, we found it forced a Precision-Recall trade-off. For example, tuning the SVM model decreased its Recall to boost Precision—the exact opposite of our clinical needs. We actively chose the Base Random Forest with SMOTE as it maximized our ability to catch seizures, missing only 13 instances across thousands of test samples. 
+* **Rejecting Hyperparameter Trade-offs:** While hyperparameter tuning generally improves overall accuracy, we found it forced a Precision-Recall trade-off. For example, tuning the SVM model decreased its Recall to boost Precision—the exact opposite of our clinical needs. We actively chose the Base Random Forest with SMOTE as it maximized our ability to catch seizures, missing only 8 instances across thousands of test samples. 
 * **Why Not SVM?** Furthermore, Support Vector Classifiers were rejected due to their high time and space complexity, making them unsuitable for our lightweight cloud deployment.
 * **Baseline Failure:** Naive models (like Logistic Regression) achieved high accuracy but failed clinically, missing >90% of seizures due to the severe class imbalance.
 
 ## 💻 Clinical Diagnostic UI (Frontend)
 The web application provides instant triage via:
 1. **Critical Alert Engine:** Instantly flags files containing seizure activity.
-2. **Temporal Diagnostic Map:** Translates multi-hour arrays into a color-coded horizontal timeline (Red = Seizure, Green = Normal).
+2. **Temporal Diagnostic Map:** Translates multi-hour arrays into a color-coded horizontal timeline (Red = Seizure, Green = Normal). *Dynamically scales to render thick, high-visibility alerts for massive 3,600-second clinical files.*
 3. **AJAX Waveform Scrubber:** Utilizes headless background rendering (`Matplotlib Agg`) to allow neurologists to seamlessly scroll through the timeline and visually verify raw EEG waveforms in real-time without page reloads.
 
 ## 📁 Repository Structure
 * [`app.py`](./app.py): The Flask cloud server backend.
 * [`NeuroPulse_Model.ipynb`](./NeuroPulse_Model.ipynb): Complete EDA, preprocessing, and model training notebook.
 * [`seizure_scaler.pkl`](./seizure_scaler.pkl): The serialized standard scaler object.
-* [`seizure_rf_model.pkl`](./seizure_rf_model.pkl): containing a pre-trained model serialized using Python's pickle module for quick deployment and inference.
+* [`seizure_rf_model.pkl`](./seizure_rf_model.pkl): The pre-trained Random Forest model serialized for quick deployment and inference.
 * [`templates/`](./templates): Folder containing HTML interface files (`index.html`).
-* [`requirements.txt`](./requirements.txt): Required dependencies for cloud deployment.
+* [`requirements.txt`](./requirements.txt): Required dependencies for cloud deployment (includes `mne` for EDF processing).
 * [`esr.csv`](./esr.csv): The primary dataset file used for model training and evaluation.
 * [`NeuroPulse_AI_Presentation.pptx`](./NeuroPulse_AI_Presentation.pptx): Project presentation slides.
+* [`NeuroPulse_AI_Presentation.pdf`](./NeuroPulse_AI_Presentation.pdf): Exported deck for cross-platform viewing.
 
 ## 🔮 Future Scope
-* Upgrade the ingestion pipeline to support live WebSocket streaming directly from hospital IoT EEG caps.
-* Scale the AWS infrastructure using a Gunicorn/Nginx cluster for multi-hospital enterprise deployment.
+* **Multi-Class Diagnostics:** Expand the model's capabilities to classify specific seizure subtypes (e.g., Focal, Absence, Generalized).
+* **Live IoT Integration:** Upgrade the ingestion pipeline to support live WebSocket streaming directly from hospital IoT EEG caps.
+* **Enterprise Architecture:** Scale the cloud backend using a Gunicorn/Nginx cluster for multi-hospital, high-traffic deployment.
 
 ## ⚙️ How to Run the Project Locally
 
 1. Clone this repository to your local machine.
-2. Place the downloaded `rf_model.pkl` in the root directory (in the same folder as `app.py`).
+2. Ensure `seizure_rf_model.pkl` and `seizure_scaler.pkl` are in the root directory (the same folder as `app.py`).
 3. Install dependencies: `pip install -r requirements.txt`
 4. Run the server: `python app.py`
+5. *Testing Tip:* You can upload standard CSV arrays or download sample `.edf` files from the [CHB-MIT Scalp EEG Database](https://physionet.org/content/chbmit/1.0.0/) to test the native clinical integration.
